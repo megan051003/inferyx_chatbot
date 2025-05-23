@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from time import sleep
 
 # Load the URLs from your links file
-with open("inferyx_docs_links.json") as f:
+with open("inferyx_doc_links.json") as f:
     urls = json.load(f)
 
 docs = []
