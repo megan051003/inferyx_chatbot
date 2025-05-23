@@ -1,6 +1,6 @@
 # app/chatbot.py
 import os
-os.environ["OPENAI_API_KEY"] = "your-api-key"  # Replace with env var or secure method
+os.environ["OPENAI_API_KEY"] = "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"  
 
 import streamlit as st
 from langchain.chains import ConversationalRetrievalChain
