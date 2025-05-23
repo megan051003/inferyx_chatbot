@@ -1,59 +1,31 @@
+from dotenv import load_dotenv
 import os
 import json
-from dotenv import load_dotenv
+from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
-# Load environment variables from .env file
 load_dotenv()
+assert os.getenv("OPENAI_API_KEY"), "OPENAI_API_KEY not found in environment variables!"
 
-# Get the OpenAI API key from environment variables
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise ValueError("❌ ERROR: Please set your OPENAI_API_KEY environment variable in the .env file")
+# Make sure this filename matches your actual data file
+with open("inferyx_docs.json", "r") as f:
+    data = json.load(f)
 
-# Set your API key for OpenAI
-os.environ["OPENAI_API_KEY"] = api_key
+print(f"Type of data: {type(data)}")
+print(f"Sample data (first item): {data[0]}")  # Optional debug print
 
-# Load your document links from the JSON file
-with open("inferyx_doc_links.json", "r") as f:
-    links = json.load(f)
+docs_data = data if isinstance(data, list) else data.get("documents", [])
 
-print(f"🔗 Loaded {len(links)} document links from inferyx_doc_links.json")
+docs = [Document(page_content=doc["content"], metadata={"title": doc.get("title", "Untitled"), "url": doc.get("url", "")}) for doc in docs_data]
 
-def build_index():
-    # Load all documents' text from the links (you should have your scraper here to fetch doc content)
-    # For demo, let's pretend you have loaded all documents as strings in a list
-    # Replace this with your actual fetching logic
-    all_docs_texts = []
-    for url in links:
-        # Here you should have your scraping or loading logic for the document content by url
-        # For now, we just append url as dummy text (replace this)
-        all_docs_texts.append(f"Document content fetched from: {url}")
+splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+chunks = splitter.split_documents(docs)
+print(f"📄 Total chunks: {len(chunks)}")
 
-    print(f"Loaded {len(all_docs_texts)} documents.")
+embedding_model = OpenAIEmbeddings()
+db = FAISS.from_documents(chunks, embedding_model)
+db.save_local("inferyx_faiss_index")
 
-    # Split documents into chunks to embed
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-    split_docs = []
-    for doc_text in all_docs_texts:
-        chunks = text_splitter.split_text(doc_text)
-        split_docs.extend(chunks)
-
-    print(f"Split documents into {len(split_docs)} chunks.")
-
-    # Create embeddings instance
-    embeddings = OpenAIEmbeddings(openai_api_key=api_key)
-
-    # Build FAISS index
-    print("Building FAISS index...")
-    db = FAISS.from_texts(split_docs, embeddings)
-
-    # Save index locally
-    db.save_local("inferyx_faiss_index")
-    print("✅ FAISS index built and saved to 'inferyx_faiss_index' folder.")
-
-if __name__ == "__main__":
-    build_index()
+print("✅ FAISS index built and saved as 'inferyx_faiss_index'")
