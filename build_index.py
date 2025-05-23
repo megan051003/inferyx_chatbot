@@ -5,6 +5,11 @@ from langchain_community.vectorstores import FAISS
 from langchain.docstore.document import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
+import os
+import argparse
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env file if present
 
 def load_links():
     with open("confluence_links.json", "r") as f:
@@ -21,7 +26,7 @@ def scrape_content(url):
         print(f"Failed to scrape {url}: {e}")
         return None
 
-def build_index():
+def build_index(api_key):
     links = load_links()
     docs = []
 
@@ -32,11 +37,28 @@ def build_index():
 
     print(f"Scraped {len(docs)} documents.")
 
+    if not docs:
+        print("No documents to index. Exiting.")
+        return
+
     splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     split_docs = splitter.split_documents(docs)
 
-    db = FAISS.from_documents(split_docs, OpenAIEmbeddings())
+    embeddings = OpenAIEmbeddings(openai_api_key=api_key)
+    db = FAISS.from_documents(split_docs, embeddings)
     db.save_local("inferyx_index")
+    print("Index saved locally as 'inferyx_index'.")
 
 if __name__ == "__main__":
-    build_index()
+    parser = argparse.ArgumentParser(description="Build FAISS index from Confluence links.")
+    parser.add_argument("--api_key", help="OpenAI API key")
+
+    args = parser.parse_args()
+    api_key = args.api_key or os.getenv("OPENAI_API_KEY")
+
+    if not api_key:
+        raise ValueError(
+            "OpenAI API key not provided. Set OPENAI_API_KEY env variable or pass --api_key."
+        )
+
+    build_index(api_key)
