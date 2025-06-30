@@ -1,8 +1,7 @@
-# server.py
 from flask import Flask, request, jsonify
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_groq import ChatGroq
+from langchain_community.llms import Ollama  # 👈 local LLM via Ollama
 from dotenv import load_dotenv
 import os
 import json
@@ -13,9 +12,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 # Load env and constants
 load_dotenv("env.txt")
-#load_dotenv("/app/framework/test/.env")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-assert GROQ_API_KEY, "GROQ_API_KEY missing!"
 
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 INDEX_PATH = "/app/framework/test/inferyx_faiss_index"
@@ -23,7 +19,7 @@ INDEX_PATH = "/app/framework/test/inferyx_faiss_index"
 # Initialize models once
 embedding_model = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
 db = FAISS.load_local(INDEX_PATH, embedding_model, allow_dangerous_deserialization=True)
-llm = ChatGroq(groq_api_key=GROQ_API_KEY, model="meta-llama/llama-4-scout-17b-16e-instruct")
+llm = Ollama(model="mistral")  # ✅ LOCAL model
 
 @app.route('/launch_chatbot', methods=['POST'])
 def launch_chatbot():
@@ -48,7 +44,7 @@ def launch_chatbot():
         return jsonify({
             "status": "success",
             "question": question,
-            "answer": response.content.strip(),
+            "answer": response.strip(),
             "sources": sources
         }), 200
 
