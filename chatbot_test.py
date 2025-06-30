@@ -1,56 +1,51 @@
-from flask import Flask, request, jsonify
+#Steps/changes: download Ollama + ollama pull mistral on terminal
+
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.llms import Ollama  # 👈 local LLM via Ollama
-from dotenv import load_dotenv
+from langchain_ollama import OllamaLLM
 import os
-import json
-import logging
 
-app = Flask(__name__)
-logging.basicConfig(level=logging.DEBUG)
-
-# Load env and constants
-load_dotenv("env.txt")
-
+# Paths and models
 EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-INDEX_PATH = "/app/framework/test/inferyx_faiss_index"
+INDEX_PATH = os.path.expanduser("/Users/name/Downloads/inferyx_test/inferyx_faiss_index")
 
-# Initialize models once
+# Load vector store and embedding model
 embedding_model = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
 db = FAISS.load_local(INDEX_PATH, embedding_model, allow_dangerous_deserialization=True)
-llm = Ollama(model="mistral")  # ✅ LOCAL model
 
-@app.route('/launch_chatbot', methods=['POST'])
-def launch_chatbot():
-    try:
-        data = request.get_json()
-        question = data.get("question", "").strip()
+# Load local LLM model via Ollama
+llm = OllamaLLM(model="mistral")
 
-        if not question:
-            return jsonify({"error": "Question is required"}), 400
+def ask_question(question: str):
+    # Search docs for relevant context
+    docs = db.similarity_search(question, k=5)
+    context = "\n\n".join([doc.page_content for doc in docs])
 
-        docs = db.similarity_search(question, k=5)
-        context = "\n\n".join([doc.page_content for doc in docs])
-        sources = list(set(doc.metadata.get("url", "") for doc in docs if doc.metadata.get("url", "")))
-        prompt = (
-            f"You are a helpful assistant that helps users understand Inferyx documentation.\n\n"
-            f"Context:\n{context}\n\n"
-            f"Question:\n{question}\n\n"
-            f"Answer clearly and concisely:"
-        )
+    # Prepare prompt with context and question
+    prompt = (
+        "You are a helpful assistant that helps users understand Inferyx documentation.\n\n"
+        f"Context:\n{context}\n\n"
+        f"Question:\n{question}\n\n"
+        "Answer clearly and concisely:"
+    )
 
-        response = llm.invoke(prompt)
-        return jsonify({
-            "status": "success",
-            "question": question,
-            "answer": response.strip(),
-            "sources": sources
-        }), 200
-
-    except Exception as e:
-        logging.exception("Error in chatbot")
-        return jsonify({"error": str(e)}), 500
+    # Get response from LLM
+    response = llm.invoke(prompt)
+    return response.strip()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5005)
+    print("🤖 Ask questions about Inferyx docs. Type 'exit' or 'quit' to stop.\n")
+    while True:
+        q = input("Enter your question: ").strip()
+        if q.lower() in {"exit", "quit"}:
+            print("👋 Goodbye!")
+            break
+        if not q:
+            print("Please enter a question or type 'exit' to quit.")
+            continue
+
+        answer = ask_question(q)
+        print("\nAnswer:")
+        print(answer)
+        print("\n" + "-"*50 + "\n")
+
