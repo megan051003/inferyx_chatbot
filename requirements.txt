@@ -1,7 +1,0 @@
-streamlit
-openai
-langchain
-faiss-cpu
-beautifulsoup4
-requests
-playwright
