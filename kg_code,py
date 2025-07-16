@@ -21,7 +21,7 @@ transformer = LLMGraphTransformer(llm=llm)
 
 # Neo4j connection
 graph = Neo4jGraph(
-    url="bolt://localhost:7687",
+    url="neo4j://65.1.212.204:7687",
     username="neo4j",
     password="20Inferyx!9"
 )
