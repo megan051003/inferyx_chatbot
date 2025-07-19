@@ -8,8 +8,14 @@ from typing import Optional
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
+import logging
 
-# Inferyx modules
+# ✅ Suppress noisy logs from third-party libraries
+logging.getLogger().setLevel(logging.WARNING)
+logging.getLogger("_client").setLevel(logging.ERROR)  # Just in case "_client" is the source
+logging.getLogger("httpx").setLevel(logging.WARNING)  # Suppress HTTP logs
+
+# ✅ Inferyx modules
 sys.path.insert(0, '/app/framework/script/module/src')
 from inferyx.components.data_preparation import AppConfig, Datapod
 
@@ -50,7 +56,6 @@ You are a helpful assistant that helps the user create or delete a datapod for a
 
 3. For **delete**, just ask for the datapod name.
 
-
 Respond conversationally but at the same time don't overtalk and ask what's missing like below
 
 What do you want your datapod name to be?
@@ -58,14 +63,11 @@ What primary key do you want [insert datapod name  or if missing just datapod] t
 
 5. just suggest 1 primary key and if user doesn't liek then suggest another. Suggest the best one without explaining ; just say "I suggest [PK_name] as the primary key, what do you think? 
 
-
 once all info is given, FOLLOW EXACT FORMAT OUTPUT, NOTHING MORE OR LESS
 
 format/template :
 
 create datapod_name primary_key_name
-
-
 """
 
 app_config = AppConfig(
@@ -94,7 +96,7 @@ def extract_fields_conversational(user_input: str) -> Optional[str]:
     chat_history.append(AIMessage(content=response.content))
     print("Assistant:", response.content)
 
- 
+
 # ✅ Start interaction
 if __name__ == "__main__":
     print("💬 Talk to the CLI to create/delete a datapod based on your CSV.\n")
