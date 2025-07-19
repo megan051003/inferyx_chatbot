@@ -94,56 +94,7 @@ def extract_fields_conversational(user_input: str) -> Optional[str]:
     chat_history.append(AIMessage(content=response.content))
     print("Assistant:", response.content)
 
-    # Try to extract fields from response using regex
-    if "creating datapod" in response.content.lower():
-        name_match = re.search(r"datapod ['\"]?(\w+)['\"]?", response.content)
-        pk_match = re.search(r"primary key[:\s]*['\"]?(\w+)['\"]?", response.content)
-        if name_match:
-            user_values["action"] = "create"
-            user_values["name"] = name_match.group(1)
-        if pk_match:
-            user_values["pk"] = pk_match.group(1)
-
-    elif "deleting datapod" in response.content.lower():
-        name_match = re.search(r"datapod ['\"]?(\w+)['\"]?", response.content)
-        if name_match:
-            user_values["action"] = "delete"
-            user_values["name"] = name_match.group(1)
-
-    # If all fields are collected, act
-    if user_values["action"] == "create" and user_values["name"] and user_values["pk"]:
-        print(f"\n✅ Proceeding to create datapod '{user_values['name']}' with PK '{user_values['pk']}'\n")
-        datapod = Datapod(
-            app_config=app_config,
-            name=user_values["name"],
-            datasource="mysql_framework_aml",
-            file_path=FILE_PATH,
-            primary_key=user_values["pk"],
-            desc="Created via CLI chatbot",
-            keyType="PHYSICAL"
-        )
-        response = datapod.create()
-        print(f"📦 Datapod Created: {response}")
-        return "done"
-
-    elif user_values["action"] == "delete" and user_values["name"]:
-        print(f"\n🗑️ Proceeding to delete datapod '{user_values['name']}'\n")
-        datapod = Datapod(
-            app_config=app_config,
-            name=user_values["name"],
-            datasource="mysql_framework_aml",
-            file_path=FILE_PATH,
-            primary_key="id",  # dummy
-            desc="",
-            keyType="PHYSICAL"
-        )
-        response = datapod.delete()
-        print(f"🧹 Datapod Deleted: {response}")
-        return "done"
-
-    return None
-
-
+ 
 # ✅ Start interaction
 if __name__ == "__main__":
     print("💬 Talk to the CLI to create/delete a datapod based on your CSV.\n")
