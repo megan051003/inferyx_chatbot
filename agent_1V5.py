@@ -113,6 +113,11 @@ def extract_fields_conversational(user_input: str) -> Optional[str]:
         user_values["action"] = "delete"
         user_values["name"] = delete_match.group(1)
 
+    read_match = re.match(r"^read\s+(\w+)$", last_line, re.IGNORECASE)
+    if delete_match:
+        user_values["action"] = "read"
+        user_values["name"] = delete_match.group(1)
+
     # ✅ Create Datapod
     if user_values["action"] == "create" and user_values["name"] and user_values["pk"]:
         print(f"\n✅ Proceeding to create datapod '{user_values['name']}' with PK '{user_values['pk']}'\n")
