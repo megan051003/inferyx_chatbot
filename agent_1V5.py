@@ -162,7 +162,7 @@ def extract_fields_conversational(user_input: str) -> Optional[str]:
             print(f"❌ Could not delete datapod: {str(e)}")
         return "done"
 
-     elif user_values["action"] == "read" and user_values["name"]:
+    elif user_values["action"] == "read" and user_values["name"]:
           print(f"\n🗑️ Proceeding to read datapod '{user_values['name']}'\n")
           try:
               datapod = Datapod(
